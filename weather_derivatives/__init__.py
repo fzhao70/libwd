@@ -15,10 +15,14 @@ from .core.weather_data import WeatherData
 from .derivatives.temperature import HDD, CDD, CAT, PAC
 from .derivatives.precipitation import PrecipitationDerivative
 from .derivatives.wind import WindDerivative
+from .derivatives.snow import SnowDerivative
+from .derivatives.frost import FrostDerivative
+from .derivatives.humidity import HumidityDerivative
+from .derivatives.solar import SolarDerivative
 from .parsers.input_parser import WeatherInputParser
 from .pricing.valuation import DerivativeValuation
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Weather Derivatives Team"
 
 __all__ = [
@@ -29,6 +33,10 @@ __all__ = [
     "PAC",
     "PrecipitationDerivative",
     "WindDerivative",
+    "SnowDerivative",
+    "FrostDerivative",
+    "HumidityDerivative",
+    "SolarDerivative",
     "WeatherInputParser",
     "DerivativeValuation",
 ]

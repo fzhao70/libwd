@@ -12,6 +12,10 @@ from weather_derivatives import (
     HDD, CDD, CAT, PAC,
     PrecipitationDerivative,
     WindDerivative,
+    SnowDerivative,
+    FrostDerivative,
+    HumidityDerivative,
+    SolarDerivative,
     DerivativeValuation,
 )
 
@@ -456,6 +460,165 @@ class TestIntegration:
         assert hdd_val >= 0
         assert cdd_val >= 0
         assert cat_val == sum(temps)
+
+
+class TestSnowDerivative:
+    """Test snow derivatives."""
+
+    def test_total_snowfall(self):
+        """Test total snowfall calculation."""
+        times = [datetime(2024, 1, 1) + timedelta(days=i) for i in range(5)]
+        snowfall = [10.0, 5.0, 15.0, 0.0, 8.0]
+
+        wd = WeatherData(time=times, snowfall=snowfall)
+        snow = SnowDerivative(wd)
+        result = snow.calculate_total_snowfall()
+
+        assert result == 38.0
+
+    def test_snow_days(self):
+        """Test snow days counting."""
+        times = [datetime(2024, 1, 1) + timedelta(days=i) for i in range(5)]
+        snowfall = [10.0, 0.5, 15.0, 0.0, 3.0]
+
+        wd = WeatherData(time=times, snowfall=snowfall)
+        snow = SnowDerivative(wd, snow_day_threshold=1.0)
+        result = snow.calculate_snow_days()
+
+        assert result == 3  # Days with >= 1.0cm
+
+
+class TestFrostDerivative:
+    """Test frost and agricultural derivatives."""
+
+    def test_frost_days(self):
+        """Test frost days counting."""
+        times = [datetime(2024, 4, 1) + timedelta(days=i) for i in range(5)]
+        min_temps = [2.0, -1.0, 5.0, -0.5, 3.0]
+
+        wd = WeatherData(time=times, min_temperature=min_temps, temperature=[15, 10, 18, 12, 16])
+        frost = FrostDerivative(wd, frost_threshold=0.0)
+        result = frost.calculate_frost_days()
+
+        assert result == 2  # Days with temp <= 0°C
+
+    def test_growing_degree_days(self):
+        """Test GDD calculation."""
+        times = [datetime(2024, 5, 1) + timedelta(days=i) for i in range(3)]
+        temps = [20.0, 25.0, 15.0]
+
+        wd = WeatherData(time=times, temperature=temps)
+        frost = FrostDerivative(wd, base_temperature=10.0)
+        gdd = frost.calculate_growing_degree_days()
+
+        # (20-10) + (25-10) + (15-10) = 10 + 15 + 5 = 30
+        assert gdd == 30.0
+
+
+class TestHumidityDerivative:
+    """Test humidity derivatives."""
+
+    def test_average_humidity(self):
+        """Test average humidity calculation."""
+        times = [datetime(2024, 6, 1) + timedelta(days=i) for i in range(3)]
+        humidity = [60.0, 80.0, 70.0]
+
+        wd = WeatherData(time=times, humidity=humidity)
+        humid = HumidityDerivative(wd)
+        result = humid.calculate_average_humidity()
+
+        assert result == 70.0
+
+    def test_high_humidity_days(self):
+        """Test high humidity days counting."""
+        times = [datetime(2024, 6, 1) + timedelta(days=i) for i in range(5)]
+        humidity = [60.0, 85.0, 90.0, 70.0, 95.0]
+
+        wd = WeatherData(time=times, humidity=humidity)
+        humid = HumidityDerivative(wd, high_humidity_threshold=80.0)
+        result = humid.calculate_high_humidity_days()
+
+        assert result == 3  # Days with >= 80%
+
+
+class TestSolarDerivative:
+    """Test solar radiation derivatives."""
+
+    def test_total_irradiance(self):
+        """Test total irradiance calculation."""
+        times = [datetime(2024, 1, 1) + timedelta(days=i) for i in range(3)]
+        irradiance = [5.0, 6.0, 4.5]
+
+        wd = WeatherData(time=times, solar_radiation=irradiance)
+        solar = SolarDerivative(wd)
+        result = solar.calculate_total_irradiance()
+
+        assert result == 15.5
+
+    def test_sunshine_hours(self):
+        """Test sunshine hours calculation."""
+        times = [datetime(2024, 1, 1) + timedelta(days=i) for i in range(3)]
+        sunshine = [8.0, 10.0, 6.0]
+
+        wd = WeatherData(time=times, sunshine_hours=sunshine)
+        solar = SolarDerivative(wd)
+        result = solar.calculate_sunshine_hours()
+
+        assert result == 24.0
+
+
+class TestAdvancedValuation:
+    """Test advanced valuation methods."""
+
+    def test_burn_rate_analysis(self):
+        """Test burn rate analysis."""
+        valuation = DerivativeValuation()
+        historical_data = [1000, 1100, 1200, 1300, 1400]
+
+        result = valuation.burn_rate_analysis(
+            historical_data=historical_data,
+            strike=1200,
+            tick_value=100,
+            distribution_fit="empirical"
+        )
+
+        assert "burn_rate" in result
+        assert "mean_payoff" in result
+        assert 0 <= result["burn_rate"] <= 1
+
+    def test_time_series_forecast(self):
+        """Test time series forecasting."""
+        valuation = DerivativeValuation()
+        historical_data = np.random.normal(1000, 100, 30)
+
+        result = valuation.time_series_forecast_valuation(
+            historical_data=historical_data,
+            strike=1100,
+            tick_value=50,
+            forecast_periods=10,
+            num_simulations=100
+        )
+
+        assert "expected_payoff" in result
+        assert "ar_coefficient" in result
+        assert result["expected_payoff"] >= 0
+
+    def test_weather_index_insurance(self):
+        """Test weather index insurance pricing."""
+        valuation = DerivativeValuation()
+        historical_data = np.random.normal(1000, 150, 20)
+
+        result = valuation.weather_index_insurance_pricing(
+            historical_data=historical_data,
+            trigger=900,
+            exit=1200,
+            limit=50000
+        )
+
+        assert "total_premium" in result
+        assert "pure_premium" in result
+        assert "loss_ratio" in result
+        assert result["total_premium"] > result["pure_premium"]
 
 
 if __name__ == "__main__":

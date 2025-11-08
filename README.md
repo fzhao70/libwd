@@ -19,18 +19,57 @@ A comprehensive Python library for calculating and pricing weather derivatives. 
   - Total precipitation
   - Rain days counting
   - Extreme event analysis
+  - Dry days counting
 
 - **Wind Derivatives**:
   - Wind power calculations
   - Calm/high wind day counting
   - Wind energy estimates
+  - Turbine production modeling
 
-- **Advanced Pricing & Valuation**:
-  - Historical burn analysis
-  - Monte Carlo simulation
+- **Snow Derivatives**:
+  - Total snowfall accumulation
+  - Snow days counting
+  - Snow depth analysis
+  - Snow cover duration
+
+- **Frost & Agricultural Derivatives**:
+  - Frost days counting
+  - Growing Degree Days (GDD)
+  - Crop Heat Units (CHU)
+  - Freeze events tracking
+
+- **Humidity Derivatives**:
+  - Average humidity calculations
+  - High/low humidity days
+  - Vapor Pressure Deficit (VPD)
+  - Heat index analysis
+
+- **Solar Radiation Derivatives**:
+  - Solar irradiance totals
+  - Sunshine hours
+  - Solar energy production estimates
+  - Cloudy days counting
+  - Capacity factor analysis
+
+- **Advanced Pricing & Valuation** (20+ state-of-the-art methods):
+  - Historical burn analysis with distribution fitting
+  - Monte Carlo simulation (standard, importance sampling, control variates)
   - Black-Scholes approximation
-  - Greeks calculation
-  - Risk metrics (VaR, CVaR, etc.)
+  - Greeks calculation (delta, gamma, vega, theta)
+  - Risk metrics (VaR, CVaR, skewness, kurtosis)
+  - Bootstrap resampling (block bootstrap)
+  - Extreme Value Theory (EVT) pricing
+  - Quantile regression
+  - Regime-switching models
+  - Time series forecasting (AR models)
+  - Weather index insurance pricing
+  - Asian option pricing
+  - Spread option pricing
+  - Portfolio optimization
+  - Stochastic volatility models
+  - Copula-based multi-index valuation
+  - Sensitivity analysis
 
 ## Installation
 
@@ -139,37 +178,102 @@ payoff = precip.payoff_total_precipitation(strike=50, tick_value=10, option_type
 print(f"Payoff: ${payoff:,.2f}")
 ```
 
-### Example 5: Advanced Valuation
+### Example 5: Snow Derivatives
 
 ```python
-from weather_derivatives import DerivativeValuation
+from weather_derivatives import WeatherInputParser, SnowDerivative
+
+parser = WeatherInputParser()
+data = parser.from_site(
+    time=dates,
+    site="Aspen Ski Resort",
+    snowfall=[10, 15, 5, 20, 8],  # cm per day
+    snow_depth=[30, 45, 50, 70, 78]  # cm
+)
+
+snow = SnowDerivative(data, snow_day_threshold=2.5)
+print(f"Total Snowfall: {snow.calculate_total_snowfall()} cm")
+print(f"Snow Days: {snow.calculate_snow_days()}")
+print(f"Max Snow Depth: {snow.calculate_max_snow_depth()} cm")
+```
+
+### Example 6: Agricultural (Frost/GDD) Derivatives
+
+```python
+from weather_derivatives import FrostDerivative
+
+frost = FrostDerivative(weather_data, frost_threshold=0.0, base_temperature=10.0)
+gdd = frost.calculate_growing_degree_days()
+frost_days = frost.calculate_frost_days()
+
+print(f"Growing Degree Days: {gdd}")
+print(f"Frost Days: {frost_days}")
+```
+
+### Example 7: Advanced Valuation Methods
+
+```python
+from weather_derivatives import DerivativeValuation, AdvancedValuation
 import numpy as np
 
-# Historical burn analysis
+# Standard methods
 valuation = DerivativeValuation(discount_rate=0.05)
-historical_hdd = np.random.normal(1200, 200, 20)  # 20 years
+historical_hdd = np.random.normal(1200, 200, 20)
 
-analysis = valuation.historical_burn_analysis(
+# Burn rate analysis with distribution fitting
+burn_analysis = valuation.burn_rate_analysis(
     historical_data=historical_hdd,
     strike=1300,
     tick_value=5000,
-    option_type="call"
+    distribution_fit="gev"  # Generalized Extreme Value
 )
 
-print(f"Mean Payoff: ${analysis['mean_payoff']:,.2f}")
-print(f"Probability ITM: {analysis['probability_itm']:.1%}")
-
-# Monte Carlo simulation
-mc_results = valuation.monte_carlo_valuation(
-    mean=800,
-    std=150,
-    strike=900,
-    tick_value=2500,
-    option_type="call",
-    num_simulations=10000
+# Time series forecasting
+ts_valuation = valuation.time_series_forecast_valuation(
+    historical_data=historical_hdd,
+    strike=1300,
+    tick_value=5000,
+    forecast_periods=30
 )
 
-print(f"Expected Payoff: ${mc_results['expected_payoff']:,.2f}")
+# Weather index insurance pricing
+insurance = valuation.weather_index_insurance_pricing(
+    historical_data=historical_hdd,
+    trigger=1000,
+    exit=1500,
+    limit=100000
+)
+print(f"Insurance Premium: ${insurance['total_premium']:,.2f}")
+
+# Advanced methods
+adv_val = AdvancedValuation()
+
+# Bootstrap resampling
+bootstrap = adv_val.bootstrap_valuation(
+    historical_data=historical_hdd,
+    strike=1300,
+    tick_value=5000,
+    num_bootstrap_samples=10000
+)
+
+# Extreme Value Theory
+evt = adv_val.extreme_value_theory_pricing(
+    historical_data=historical_hdd,
+    strike=1300,
+    tick_value=5000
+)
+
+# Regime-switching model
+regime = adv_val.regime_switching_valuation(
+    historical_data=historical_hdd,
+    strike=1300,
+    tick_value=5000,
+    num_regimes=2
+)
+
+print(f"Bootstrap Mean: ${bootstrap['mean_payoff']:,.2f}")
+print(f"EVT Expected Payoff: ${evt['expected_payoff']:,.2f}")
+print(f"Regime-Switching: ${regime['expected_payoff']:,.2f}")
 ```
 
 ## Documentation
@@ -268,15 +372,20 @@ libwd/
 │   │   └── weather_data.py
 │   ├── derivatives/
 │   │   ├── __init__.py
-│   │   ├── temperature.py
-│   │   ├── precipitation.py
-│   │   └── wind.py
+│   │   ├── temperature.py      # HDD, CDD, CAT, PAC
+│   │   ├── precipitation.py    # Rainfall derivatives
+│   │   ├── wind.py             # Wind power derivatives
+│   │   ├── snow.py             # Snowfall derivatives
+│   │   ├── frost.py            # GDD, frost days
+│   │   ├── humidity.py         # Humidity derivatives
+│   │   └── solar.py            # Solar radiation derivatives
 │   ├── parsers/
 │   │   ├── __init__.py
 │   │   └── input_parser.py
 │   └── pricing/
 │       ├── __init__.py
-│       └── valuation.py
+│       ├── valuation.py         # 15+ pricing methods
+│       └── advanced_valuation.py # Advanced techniques
 ├── examples/
 │   ├── basic_usage.py
 │   └── advanced_pricing.py
@@ -304,19 +413,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Citation
-
-If you use this library in your research, please cite:
-
-```
-@software{weather_derivatives,
-  title = {Weather Derivatives Library},
-  author = {Weather Derivatives Team},
-  year = {2024},
-  url = {https://github.com/yourusername/libwd}
-}
-```
 
 ## References
 

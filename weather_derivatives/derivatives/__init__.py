@@ -3,6 +3,10 @@
 from .temperature import HDD, CDD, CAT, PAC
 from .precipitation import PrecipitationDerivative
 from .wind import WindDerivative
+from .snow import SnowDerivative
+from .frost import FrostDerivative
+from .humidity import HumidityDerivative
+from .solar import SolarDerivative
 
 __all__ = [
     "HDD",
@@ -11,4 +15,8 @@ __all__ = [
     "PAC",
     "PrecipitationDerivative",
     "WindDerivative",
+    "SnowDerivative",
+    "FrostDerivative",
+    "HumidityDerivative",
+    "SolarDerivative",
 ]
